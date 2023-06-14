@@ -1,5 +1,5 @@
 # %% Imports
-from skimage.transform import rotate, resize
+from skimage.transform import rotate, resize, warp
 from skimage.data import shepp_logan_phantom
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +21,18 @@ data = np.repeat(np.expand_dims(data, 1), axis=1, repeats=data.shape[-1]) # [z, 
 # %% Baseline, by scikit 
 def rotate_volume_y(volume: np.ndarray, angle: degrees) -> np.ndarray:
     return np.stack([rotate(volume[:, idx, :], angle, order=1, resize=False) for idx in range(volume.shape[1])], axis=1)
+
+
+def rotate_volume_y_warp(volume: np.ndarray, angle: degrees) -> np.ndarray:
+    def rotate_single(image):
+        center = image.shape[0] // 2
+        theta = np.deg2rad(angle)
+        cos_a, sin_a = np.cos(theta), np.sin(theta)
+        R = np.array([[cos_a, sin_a, -center * (cos_a + sin_a - 1)],
+                          [-sin_a, cos_a, -center * (cos_a - sin_a - 1)],
+                          [0, 0, 1]])
+        return warp(image, R, clip=False)
+    return np.stack([rotate_single(volume[:, idx]) for idx in range(volume.shape[1])], axis=1)
 
 
 # %%
