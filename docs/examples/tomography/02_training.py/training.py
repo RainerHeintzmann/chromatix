@@ -23,17 +23,17 @@ sinogram = diff_volume_sinogram(volume)
 
 # %%
 def loss_fn(volume, sinogram):
-    return jnp.mean((sinogram - diff_volume_sinogram(volume))**2)
+    return jnp.mean((sinogram - diff_volume_sinogram(jnp.maximum(volume, 0.0)))**2)
 
 assert loss_fn(volume, sinogram) == 0
 # %% Having a look at the grads
 grad_fn =  jit(value_and_grad(loss_fn))
-loss, grads = grad_fn(jnp.zeros_like(volume), sinogram)
+loss, grads = grad_fn(jnp.full_like(volume, 1e-3), sinogram)
 plt.imshow(grads[:, 0, :]) # that's pretty good! 
 plt.colorbar() 
 
 # %% Training
-params = jnp.zeros_like(volume)
+params = jnp.full_like(volume, 1e-3)
 optimizer = optax.adam(learning_rate=1e-3)
 opt_state = optimizer.init(params)
 
