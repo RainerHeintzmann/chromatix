@@ -66,10 +66,18 @@ def diff_rotate_volume_y(volume: Array, angle: radians) -> Array:
 def test_jax_rotation(volume: np.ndarray, n_random_angles: int):
     angles = np.random.uniform(0, 360, n_random_angles)
     for angle in angles:
-        jax_result = diff_rotate_volume_y(data, angle / 180 * np.pi)
-        baseline = rotate_volume_y(data, angle)
+        jax_result = diff_rotate_volume_y(volume, angle / 180 * np.pi)
+        baseline = rotate_volume_y(volume, angle)
+        assert jnp.allclose(baseline, jax_result, atol=1e-5)
+
+def test_jax_rotation_single(image: np.ndarray, n_random_angles: int):
+    angles = np.random.uniform(0, 360, n_random_angles)
+    for angle in angles:
+        jax_result = diff_rotate_volume_y(image, angle / 180 * np.pi)
+        baseline = rotate_volume_y(image, angle)
         assert jnp.allclose(baseline, jax_result, atol=1e-5)
 # %%
 test_jax_rotation(data, 5)
+test_jax_rotation_single(data[:, [10]], 5)
 
 # %%
