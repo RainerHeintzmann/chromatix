@@ -1,6 +1,6 @@
 import flax.linen as nn
 from typing import Callable, Optional, Union
-from chex import PRNGKey
+from chex import PRNGKey, Array
 from ..field import Field
 from .. import functional as cf
 from chromatix.elements.utils import register
@@ -103,3 +103,18 @@ class DFLens(nn.Module):
         n = register(self, "n")
         NA = register(self, "NA")
         return cf.df_lens(field, d, f, n, NA, inverse=self.inverse)
+
+
+class MicrolensArray(nn.Module):
+    centers: Union[Array, Callable[[PRNGKey], Array]]
+    fs: Union[Array, Callable[[PRNGKey], Array]]
+    ns: Union[Array, Callable[[PRNGKey], Array]]
+    NAs: Union[Array, Callable[[PRNGKey], Array]]
+
+    @nn.compact
+    def __call__(self, field: Field) -> Field:
+        centers = register(self, "centers")
+        fs = register(self, "fs")
+        ns = register(self, "ns")
+        NAs = register(self, "NAs")
+        return cf.microlens_array(field, centers, fs, ns, NAs)

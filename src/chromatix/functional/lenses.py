@@ -1,9 +1,10 @@
 import jax.numpy as jnp
+from chex import Array
 from typing import Optional
 from ..field import Field
 from .pupils import circular_pupil
 from chromatix.functional.convenience import optical_fft
-from ..utils import l2_sq_norm
+from ..utils import l2_sq_norm, _broadcast_1d_to_grid
 
 __all__ = ["thin_lens", "ff_lens", "df_lens"]
 
@@ -97,4 +98,24 @@ def df_lens(
     # Phase factor due to distance d from lens
     L = jnp.sqrt(jnp.complex64(field.spectrum * f / n))  # Lengthscale L
     phase = jnp.pi * (1 - d / f) * l2_sq_norm(field.grid) / jnp.abs(L) ** 2
+    return field * jnp.exp(1j * phase)
+
+
+def microlens_array(
+    field: Field,
+    centers: Array,
+    fs: Array,
+    ns: Array,
+    NAs: Array,
+) -> Field:
+    phase = jnp.zeros(field.spatial_shape)
+    for i in range(fs.shape):
+        L_sq = field.spectrum * fs[i] / ns[i]
+        radius = NAs[i] * fs[i] / ns[i]
+        squared_distance = l2_sq_norm(
+            field.grid - _broadcast_1d_to_grid(jnp.squeeze(centers[:, i]), field.ndim)
+        )
+        mask = jnp.squeeze(squared_distance) < radius**2
+        phase += mask * jnp.squeeze(squared_distance) / L_sq
+    phase *= -jnp.pi
     return field * jnp.exp(1j * phase)
