@@ -101,6 +101,51 @@ def df_lens(
     return field * jnp.exp(1j * phase)
 
 
+def mla(
+    field: Field,
+    f: float,
+    ns: float,
+    nu: float,
+    D: float
+) -> Field:
+    """
+    Applies a tiled phase mask created by a microlens array (MLA).
+
+    Args:
+        field: The ``Field`` to which the MLA will be applied.
+        f: Focal length of the lens.
+        ns: Number of lenslets in each linear dimension
+        nu: Number of pixels per lenslet in each linear dimension.
+        D: Diameter of each lenslet.
+
+    Returns:
+        The ``Field`` propagated a distance ``f`` after the MLA.
+    """
+    # TODO: adjust function so that they input field is not modified, and a new field is returned.
+    # TODO: allow vector fields to be input
+    # TODO: add an optional aperture
+    # TODO: account for incompatible input values
+    wavelength = field._spectrum
+    (_, M, N, _, _) = field.shape
+    lenslet_len = int(M / ns)
+    nu = int(nu)
+    assert lenslet_len == nu, "Lenslet length must be equal to nu"
+    # Create a local optical system that retards the phase for each lenslet
+    dx = field._dx[0].item()
+    k = 2 * jnp.pi / wavelength
+    x = jnp.linspace(-D/2 + dx/2, D/2 - dx/2, lenslet_len)
+    X, Y = jnp.meshgrid(x, x)
+    phase = jnp.exp(-1j * k / (2 * f) * (jnp.square(X) + jnp.square(Y)))
+
+    # Apply the phase mask to each lenslet
+    phase_dim_ext = jnp.expand_dims(phase, axis=(0, -2, -1))
+    for s in jnp.arange(ns):
+        for t in jnp.arange(ns):
+            cell = field.u[:, s*lenslet_len:(s+1)*lenslet_len, t*lenslet_len:(t+1)*lenslet_len]
+            field.u.at[:, s*lenslet_len:(s+1)*lenslet_len, t*lenslet_len:(t+1)*lenslet_len, :, :].set(cell * phase_dim_ext)
+    return field
+
+
 def microlens_array(
     field: Field,
     centers: Array,
@@ -109,7 +154,13 @@ def microlens_array(
     NAs: Array,
 ) -> Field:
     phase = jnp.zeros(field.spatial_shape)
-    for i in range(fs.shape):
+    # Not sure the scenario where indexing is not necessary -Geneva
+    focal_length_indexing_needed = True
+    if focal_length_indexing_needed:
+        len_focal_lengths = fs.shape[0]
+    else:
+        len_focal_lengths = fs.shape
+    for i in range(len_focal_lengths):
         L_sq = field.spectrum * fs[i] / ns[i]
         radius = NAs[i] * fs[i] / ns[i]
         squared_distance = l2_sq_norm(
