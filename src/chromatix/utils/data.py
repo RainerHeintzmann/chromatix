@@ -217,3 +217,177 @@ class RandDiskGenerator:  # TODO avoid overlapping disks
             yield self.__getitem__(i)
             if i == self.__len__() - 1:
                 self.reset()
+
+def min_hari_phantom(shape: Tuple[int, int, int], seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    volume = np.zeros(shape)
+    # dots
+    num_dots = 50
+    vmin = 500
+    vmax = 4000
+    values = rng.integers(low=vmin, high=vmax, size=num_dots)
+    z = rng.integers(low=0, high=shape[0], size=num_dots)
+    y = rng.integers(low=0, high=shape[1], size=num_dots)
+    x = rng.integers(low=0, high=shape[2], size=num_dots)
+    volume[z, y, x] = values
+    # lines
+    num_lines = 150
+    vmin = 200
+    vmax = 1500
+    values = rng.integers(low=vmin, high=vmax, size=num_lines)
+    max_length = np.round(0.8 * shape[2])
+    lengths = rng.integers(low=1, high=max_length, size=num_lines)
+    theta = rng.uniform(low=0, high=2 * np.pi, size=num_lines)
+    alpha = rng.uniform(low=0, high=2 * np.pi, size=num_lines)
+    start_z = rng.integers(low=0, high=shape[0], size=num_lines)
+    start_y = rng.integers(low=0, high=shape[1], size=num_lines)
+    start_x = rng.integers(low=0, high=shape[2], size=num_lines)
+    for i in range(num_lines):
+        length_yx = np.abs(lengths[i] * np.sin(alpha[i]))
+        length_zx = np.abs(lengths[i] * np.cos(alpha[i]))
+        end_z = np.minimum(np.maximum(np.round(start_z[i] + length_zx), 0), shape[0] - 1)
+        end_y = np.minimum(np.maximum(np.round(start_y[i] + length_yx * np.sin(theta[i])), 0), shape[1] - 1)
+        end_x = np.minimum(np.maximum(np.round(start_x[i] + length_yx * np.cos(theta[i])), 0), shape[2] - 1)
+        volume[
+            np.linspace(start_z[i], end_z, num=lengths[i], dtype=int),
+            np.linspace(start_y[i], end_y, num=lengths[i], dtype=int),
+            np.linspace(start_x[i], end_x, num=lengths[i], dtype=int),
+        ] = values[i]
+    # horizontal lines
+    num_lines = 30
+    vmin = 200
+    vmax = 1500
+    values = rng.integers(low=vmin, high=vmax, size=num_lines)
+    max_length = np.round(0.8 * shape[2])
+    lengths = rng.integers(low=1, high=max_length, size=num_lines)
+    theta = rng.uniform(low=0, high=2 * np.pi, size=num_lines)
+    alpha = np.pi / 2
+    start_z = rng.integers(low=0, high=shape[0], size=num_lines)
+    start_y = rng.integers(low=0, high=shape[1], size=num_lines)
+    start_x = rng.integers(low=0, high=shape[2], size=num_lines)
+    for i in range(num_lines):
+        length_yx = np.abs(lengths[i] * np.sin(alpha))
+        length_zx = np.abs(lengths[i] * np.cos(alpha))
+        end_z = np.minimum(np.maximum(np.round(start_z[i] + length_zx), 0), shape[0] - 1)
+        end_y = np.minimum(np.maximum(np.round(start_y[i] + length_yx * np.sin(theta[i])), 0), shape[1] - 1)
+        end_x = np.minimum(np.maximum(np.round(start_x[i] + length_yx * np.cos(theta[i])), 0), shape[2] - 1)
+        volume[
+            np.linspace(start_z[i], end_z, num=lengths[i], dtype=int),
+            np.linspace(start_y[i], end_y, num=lengths[i], dtype=int),
+            np.linspace(start_x[i], end_x, num=lengths[i], dtype=int),
+        ] = values[i]
+    # horizontal lines
+    num_lines = 30
+    vmin = 200
+    vmax = 1500
+    values = rng.integers(low=vmin, high=vmax, size=num_lines)
+    max_length = np.round(0.8 * shape[2])
+    lengths = rng.integers(low=1, high=max_length, size=num_lines)
+    theta = np.pi / 2
+    alpha = rng.uniform(low=0, high=2 * np.pi, size=num_lines)
+    start_z = rng.integers(low=0, high=shape[0], size=num_lines)
+    start_y = rng.integers(low=0, high=shape[1], size=num_lines)
+    start_x = rng.integers(low=0, high=shape[2], size=num_lines)
+    for i in range(num_lines):
+        length_yx = np.abs(lengths[i] * np.sin(alpha[i]))
+        length_zx = np.abs(lengths[i] * np.cos(alpha[i]))
+        end_z = np.minimum(np.maximum(np.round(start_z[i] + length_zx), 0), shape[0] - 1)
+        end_y = np.minimum(np.maximum(np.round(start_y[i] + length_yx * np.sin(theta)), 0), shape[1] - 1)
+        end_x = np.minimum(np.maximum(np.round(start_x[i] + length_yx * np.cos(theta)), 0), shape[2] - 1)
+        volume[
+            np.linspace(start_z[i], end_z, num=lengths[i], dtype=int),
+            np.linspace(start_y[i], end_y, num=lengths[i], dtype=int),
+            np.linspace(start_x[i], end_x, num=lengths[i], dtype=int),
+        ] = values[i]
+    # balls
+    num_balls = 100
+    vmin = 100
+    vmax = 800
+    vmid = np.round((vmin + vmax) / 2)
+    radii = rng.random(num_balls)
+    max_radius = 6
+    values = np.where(radii <= 0.5, rng.integers(low=vmid, high=vmax, size=num_balls), rng.integers(low=vmin, high=vmid, size=num_balls))
+    radii *= max_radius
+    z = rng.integers(low=max_radius + 1, high=shape[0] - max_radius, size=num_balls)
+    y = rng.integers(low=max_radius + 1, high=shape[1] - max_radius, size=num_balls)
+    x = rng.integers(low=max_radius + 1, high=shape[2] - max_radius, size=num_balls)
+    for i in range(num_balls):
+        radius = radii[i]
+        length = int(2 * np.round(radius) + 1)
+        Z, Y, X = np.meshgrid(
+            np.linspace(-radius, radius, num=length),
+            np.linspace(-radius, radius, num=length),
+            np.linspace(-radius, radius, num=length),
+            indexing="ij"
+        )
+        Z += 0.5
+        Y += 0.5
+        X += 0.5
+        ball = Z**2 + Y**2 + X**2
+        ball = (ball <= radius**2) * values[i]
+        volume[
+            z[i] - (length - 1) // 2:z[i] + (length + 1) // 2,
+            y[i] - (length - 1) // 2:y[i] + (length + 1) // 2,
+            x[i] - (length - 1) // 2:x[i] + (length + 1) // 2,
+        ] += ball
+    # shells
+    num_shells = 100
+    vmin = 100
+    vmax = 1000
+    max_radius = 12
+    shell_thickness = 1
+    radii = rng.random(num_shells)
+    radii *= max_radius
+    values = rng.integers(low=vmin, high=vmax, size=num_shells)
+    z = rng.integers(low=max_radius + 1, high=shape[0] - max_radius, size=num_shells)
+    y = rng.integers(low=max_radius + 1, high=shape[1] - max_radius, size=num_shells)
+    x = rng.integers(low=max_radius + 1, high=shape[2] - max_radius, size=num_shells)
+    for i in range(num_shells):
+        radius = radii[i]
+        length = int(2 * np.round(radius) + 1)
+        Z, Y, X = np.meshgrid(
+            np.linspace(-radius, radius, num=length),
+            np.linspace(-radius, radius, num=length),
+            np.linspace(-radius, radius, num=length),
+            indexing="ij"
+        )
+        Z += 0.5
+        Y += 0.5
+        X += 0.5
+        shell = Z**2 + Y**2 + X**2
+        shell = ((shell < radius**2) & (shell >= (radius - shell_thickness)**2)) * values[i]
+        volume[
+            z[i] - (length - 1) // 2:z[i] + (length + 1) // 2,
+            y[i] - (length - 1) // 2:y[i] + (length + 1) // 2,
+            x[i] - (length - 1) // 2:x[i] + (length + 1) // 2,
+        ] += shell
+    # rings
+    num_rings = 100
+    vmin = 200
+    vmax = 1500
+    max_radius = 12
+    ring_thickness = 1
+    radii = rng.random(num_rings)
+    radii *= max_radius
+    values = rng.integers(low=vmin, high=vmax, size=num_rings)
+    z = rng.integers(low=max_radius + 1, high=shape[0] - max_radius, size=num_rings)
+    y = rng.integers(low=max_radius + 1, high=shape[1] - max_radius, size=num_rings)
+    x = rng.integers(low=max_radius + 1, high=shape[2] - max_radius, size=num_rings)
+    for i in range(num_rings):
+        radius = radii[i]
+        length = int(2 * np.round(radius) + 1)
+        Y, X = np.meshgrid(
+            np.linspace(-radius, radius, num=length),
+            np.linspace(-radius, radius, num=length),
+            indexing="ij"
+        )
+        Y += 0.5
+        X += 0.5
+        ring = Y**2 + X**2
+        ring = ((ring < radius**2) & (ring >= (radius - ring_thickness)**2)) * values[i]
+        volume[
+            z[i],
+            y[i] - (length - 1) // 2:y[i] + (length + 1) // 2,
+            x[i] - (length - 1) // 2:x[i] + (length + 1) // 2,
+        ] += ring
+    return volume
